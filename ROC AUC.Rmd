@@ -9,13 +9,23 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+AUC measures the ability of a model to distinguish two classes by allocating instances a score subject to a classification threshold. This is not equivalent to estimating the class-membership probabilities. Allocating scores that are lower for negative cases, and higher for positive cases, than the corresponding probabilities, generally results in a higher AUC.
+
+[Google's ML crash course](https://developers.google.com/machine-learning/crash-course/classification/roc-and-auc) covers this pretty well. 
+
+- The property is known as scale-invariance, and the discrepancy with probability is described. 
+    - The point is that it's the ranking of the predictions that matters, rather than their values.
+- The property of classification-threshold invariance and it's drawbacks are described in terms of weighting of false positive vs negatives.
+- There is an interpretation in terms of the probability of ranking a positive example higher than a negative example.
+
+
 ```{r}
-# Make bernoulli data
+# Make Bernoulli data
 n = 1000
 p = runif(n)
 y = rbinom(n, 1, p)
 
-# Find sensitivity and specificity over classification thresholds
+# Function to view classification-scores, ROC curve, and AUC 
 roc_auc = function(p) {
   # Plot probability estimates
   plot(p, y)
@@ -26,6 +36,7 @@ roc_auc = function(p) {
     main = "y == 0 and y == 1", xlab = "p")
   plot(h1, add = T, col = rgb(1, 0, 0, 0.3))
   
+  # Find sensitivity and specificity over classification thresholds
   se = sp = numeric(n)
   for (i in 1:n) {
     th = i / n
@@ -43,24 +54,17 @@ roc_auc = function(p) {
   sum(abs(diff(c(1, 1 - sp))) * se)
 }
 
+# View classification-scores, ROC curve, and AUC of underlying probabilities
 roc_auc(p)
 ```
 
 ```{r}
+# Make scores that classify better
 p2 = p
 p2[y == 0] = 0.5 * p2[y == 0]
 p2[y == 1] = 1 - 0.5 * (1 - p2[y == 1])
 
+# Show them, and their ROC curve and AUC
 roc_auc(p2)
 ```
 
-AUC measures the ability of a model to distinguish two classes by allocating instances a score subject to a classification threshold. This is not equivalent to estimating the class-membership probabilities. Allocating scores that are lower for negative cases, and higher for positive cases, than the corresponding probabilities, generally results in a higher AUC.
-
-[Google's ML crash course](https://developers.google.com/machine-learning/crash-course/classification/roc-and-auc) covers this pretty well. 
-
-- The property is known as scale-invariance, and the discrepency with probability is described. 
-    - The point is that it's the ranking of the predictions that matters, rather than their values.
-- The property of classification-threshold invariance and it's drawbacks are described in terms of weighting of false postives vs negatives.
-- An interpretation in terms of the probability of ranking a positive example higher than a negative example.
-
-I should think a bit more about these... 
