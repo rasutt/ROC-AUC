@@ -1,0 +1,66 @@
+---
+title: "ROC AUC"
+author: "Robin Aldridge-Sutton"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Make bernoulli data
+n = 1000
+p = runif(n)
+y = rbinom(n, 1, p)
+
+# Find sensitivity and specificity over classification thresholds
+roc_auc = function(p) {
+  # Plot probability estimates
+  plot(p, y)
+  boxplot(p ~ y, horizontal = T)
+  h1 = hist(p[y == 1], plot = F)
+  hist(
+    p[y == 0], xlim = 0:1, ylim = c(0, 1.1 * max(h1$counts)),
+    main = "y == 0 and y == 1", xlab = "p")
+  plot(h1, add = T, col = rgb(1, 0, 0, 0.3))
+  
+  se = sp = numeric(n)
+  for (i in 1:n) {
+    th = i / n
+    sp[i] = mean(p[y == 0] < th)
+    se[i] = mean(p[y == 1] > th)
+  }
+  
+  # Plot ROC (Receiver Operating Characteristic) curve. Google ML crash course
+  # defines it as the true positive rate (TPR, sensitivity/recall) plotted over
+  # the false positive rate (FPR, one minus the specificity)
+  plot(1 - sp, se, t = "l", asp = 1)
+  lines(0:1, 0:1, lty = 2)
+  
+  # Find AUC (Area Under the Curve)
+  sum(abs(diff(c(1, 1 - sp))) * se)
+}
+
+roc_auc(p)
+```
+
+```{r}
+p2 = p
+p2[y == 0] = 0.5 * p2[y == 0]
+p2[y == 1] = 1 - 0.5 * (1 - p2[y == 1])
+
+roc_auc(p2)
+```
+
+AUC measures the ability of a model to distinguish two classes by allocating instances a score subject to a classification threshold. This is not equivalent to estimating the class-membership probabilities. Allocating scores that are lower for negative cases, and higher for positive cases, than the corresponding probabilities, generally results in a higher AUC.
+
+[Google's ML crash course](https://developers.google.com/machine-learning/crash-course/classification/roc-and-auc) covers this pretty well. 
+
+- The property is known as scale-invariance, and the discrepency with probability is described. 
+    - The point is that it's the ranking of the predictions that matters, rather than their values.
+- The property of classification-threshold invariance and it's drawbacks are described in terms of weighting of false postives vs negatives.
+- An interpretation in terms of the probability of ranking a positive example higher than a negative example.
+
+I should think a bit more about these... 
